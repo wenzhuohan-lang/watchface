@@ -1,0 +1,6 @@
+<svg width="1160" height="1160" viewBox="0 0 1160 1160" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect id="frameT" width="1160" height="100" fill="#FF00FF"/>
+<rect id="frameR" x="1060" y="100" width="100" height="960" fill="#FF00FF"/>
+<rect id="frameL" y="100" width="100" height="960" fill="#FF00FF"/>
+<rect id="frameB" y="1060" width="1160" height="100" fill="#FF00FF"/>
+</svg>
