@@ -513,7 +513,7 @@ function handleMotion(e) {
   let ay = acc.y || 0;
 
   // 这里可以根据你握手机的方向做微调，比如反过来：
-  ax = -ax;
+  ax = ax;
   ay = -ay;
 
   // 归一化到 [-1, 1]
