@@ -45,6 +45,7 @@ let interactionT = 0; // hold mouse -> straight wave (noiseScale -> 0)
 let prevInteractionT = 0; // track previous frame's interactionT
 let shakeStrength = 0;
 let shakePhase = 0;
+let pointerDown = false;
 
 // A key “shake scrub”
 const SHAKE_FREQ = 4.0;
@@ -164,6 +165,29 @@ function setup() {
   fitCanvasToScreen();
   colorMode(RGB);
 
+  if (document && document.documentElement) {
+    document.documentElement.style.webkitTouchCallout = 'none';
+    document.documentElement.style.webkitUserSelect = 'none';
+    document.documentElement.style.userSelect = 'none';
+  }
+  if (document && document.body) {
+    document.body.style.webkitTouchCallout = 'none';
+    document.body.style.webkitUserSelect = 'none';
+    document.body.style.userSelect = 'none';
+  }
+
+  if (p5Canvas && p5Canvas.elt) {
+    p5Canvas.elt.style.touchAction = 'none';
+    p5Canvas.elt.style.webkitTouchCallout = 'none';
+    p5Canvas.elt.style.webkitUserSelect = 'none';
+    p5Canvas.elt.style.userSelect = 'none';
+    p5Canvas.elt.style.webkitTapHighlightColor = 'transparent';
+    p5Canvas.elt.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
+    p5Canvas.elt.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+    p5Canvas.elt.addEventListener('contextmenu', (e) => e.preventDefault());
+    p5Canvas.elt.addEventListener('selectstart', (e) => e.preventDefault());
+  }
+
   engine = Engine.create();
   world = engine.world;
 
@@ -226,7 +250,7 @@ function draw() {
   const dt = deltaTime / 1000;
 
   // hold mouse -> straighten wave
-  const targetT = mouseIsPressed ? 1.0 : 0.0;
+  const targetT = pointerDown ? 1.0 : 0.0;
   prevInteractionT = interactionT;
   interactionT = lerp(interactionT, targetT, 0.05);
   const noiseScale = 1.0 - interactionT;
@@ -898,6 +922,31 @@ class SandParticle {
     circle(0, 0, this.r * 2);
     pop();
   }
+}
+
+function mousePressed() {
+  pointerDown = true;
+  return false;
+}
+
+function mouseReleased() {
+  pointerDown = false;
+  return false;
+}
+
+function touchStarted() {
+  pointerDown = true;
+  return false;
+}
+
+function touchEnded() {
+  pointerDown = false;
+  return false;
+}
+
+function touchCancelled() {
+  pointerDown = false;
+  return false;
 }
 
 // ================== TimeBubble ==================
