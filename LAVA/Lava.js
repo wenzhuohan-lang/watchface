@@ -5,23 +5,6 @@ try {
   console.warn('matter-wrap plugin skipped (incompatible with this matter-js version):', err);
 }
 
-function fitCanvasToScreen() {
-  if (!p5Canvas) return;
-  const s = min(windowWidth, windowHeight);
-  const size = constrain(s, 320, BASE_CANVAS_SIZE);
-  p5Canvas.style('width', `${size}px`);
-  p5Canvas.style('height', `${size}px`);
-
-  // Keep Matter.Mouse coordinates aligned when canvas is CSS-scaled
-  if (mouse && mouse.mouseConstraint && mouse.mouseConstraint.mouse) {
-    mouse.mouseConstraint.mouse.pixelRatio = BASE_CANVAS_SIZE / size;
-  }
-}
-
-function windowResized() {
-  fitCanvasToScreen();
-}
-
 // eigene dist-Funktion in dieser Datei umbennen: localDist
 function localDist(x1, y1, x2, y2) {
   if (arguments.length === 2) return Math.hypot(x1, y1);
@@ -53,9 +36,6 @@ let prevSecond;
 let engine;
 let world;
 let fallingCircles = [];
-
-let p5Canvas;
-const BASE_CANVAS_SIZE = 960;
 
 let lastSpawnMillis = 0;
 window.stepcounter = window.stepcounter || 500;
@@ -198,9 +178,27 @@ function keyReleased() {
 }
 
 function setup() {
-  p5Canvas = createCanvas(BASE_CANVAS_SIZE, BASE_CANVAS_SIZE);
-  pixelDensity(1);
+  const canvas = createCanvas(960, 960);
   center = { x: width / 2, y: height / 2 };
+
+  // === CANVAS TOUCH/CLICK = SPACE (Magnet invertieren) ===
+  canvas.mousePressed(() => {
+    spaceHeld = true;
+  });
+  canvas.mouseReleased(() => {
+    spaceHeld = false;
+  });
+  canvas.touchStarted(() => {
+    spaceHeld = true;
+    return false; // prevent default
+  });
+  canvas.touchEnded(() => {
+    spaceHeld = false;
+    return false;
+  });
+
+  // === MOBILE STEP BUTTON ===
+  createMobileStepButton();
 
   const obstacleR = CIRCLE_DIAM / 2;
   radius = floor(min(width, height) / 2) - 40 - obstacleR - 20;
@@ -352,8 +350,7 @@ function setup() {
   if (handHourExtShield) { handHourExtShield.body = handHourExtShield; handHourExtShield.createdAt = millis(); }
   if (centerShield)      { centerShield.body      = centerShield;      centerShield.createdAt      = millis(); }
 
-  mouse = new Mouse(engine, p5Canvas, { stroke: 'magenta', strokeWeight: 2 });
-  fitCanvasToScreen();
+  mouse = new Mouse(engine, canvas, { stroke: 'magenta', strokeWeight: 2 });
 
   // Fixed runner (120Hz)
   const runner = Matter.Runner.create({
@@ -984,4 +981,101 @@ function clampBodyVelocity(body, maxSpeed) {
     const a = Math.atan2(vel.y, vel.x);
     Matter.Body.setVelocity(body, { x: Math.cos(a) * maxSpeed, y: Math.sin(a) * maxSpeed });
   }
+}
+
+// === MOBILE STEP BUTTON ERSTELLEN ===
+function createMobileStepButton() {
+  // Button erstellen
+  const btn = document.createElement('button');
+  btn.id = 'mobile-step-btn';
+  btn.textContent = 'STEPS +';
+  btn.style.cssText = `
+    position: fixed;
+    bottom: 60px;
+    right: 20px;
+    width: 160px;
+    height: 50px;
+    border-radius: 10px;
+    background: #FFD600;
+    color: #000;
+    font-size: 16px;
+    font-weight: bold;
+    font-family: Arial, sans-serif;
+    border: none;
+    cursor: pointer;
+    z-index: 9999;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+  `;
+
+  function startHold() {
+    sHeld = true;
+    startStepBoost();
+    btn.style.background = '#E6C200';
+    btn.style.transform = 'scale(0.98)';
+  }
+
+  function endHold() {
+    sHeld = false;
+    stopStepBoost();
+    btn.style.background = '#FFD600';
+    btn.style.transform = 'scale(1)';
+  }
+
+  // Touch Events
+  btn.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    startHold();
+  }, { passive: false });
+
+  btn.addEventListener('touchend', (e) => {
+    e.preventDefault();
+    endHold();
+  }, { passive: false });
+
+  btn.addEventListener('touchcancel', (e) => {
+    e.preventDefault();
+    endHold();
+  }, { passive: false });
+
+  // Mouse Events (für Desktop-Test)
+  btn.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    startHold();
+  });
+
+  btn.addEventListener('mouseup', (e) => {
+    e.preventDefault();
+    endHold();
+  });
+
+  btn.addEventListener('mouseleave', (e) => {
+    if (sHeld) endHold();
+  });
+
+  document.body.appendChild(btn);
+
+  // Stepcounter-Anzeige erstellen (unter dem Button, links bündig)
+  const counter = document.createElement('div');
+  counter.id = 'step-counter-display';
+  counter.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 160px;
+    text-align: left;
+    color: #000;
+    font-size: 18px;
+    font-weight: bold;
+    font-family: Arial, sans-serif;
+    z-index: 9999;
+  `;
+  document.body.appendChild(counter);
+
+  // Stepcounter-Anzeige aktualisieren
+  setInterval(() => {
+    const val = window.stepcounter || 0;
+    counter.textContent = val.toLocaleString();
+  }, 100);
 }
